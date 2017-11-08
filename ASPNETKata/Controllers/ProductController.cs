@@ -28,7 +28,13 @@ namespace ASPNETKata.Controllers
         // GET: Product/Details/5
         public ActionResult Details(int id)
         {
-            return View();
+            var connectionString = "Server=localhost;Database=Adventureworks;Uid=root;Pwd=5Fingers";
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                var product = conn.Query<Product>("Select * from Product WHERE ProductId = @Id", new { Id = id }).FirstOrDefault();
+                return View(product);
+            }
         }
 
         // GET: Product/Create
@@ -98,15 +104,22 @@ namespace ASPNETKata.Controllers
         [HttpPost]
         public ActionResult Delete(int id, FormCollection collection)
         {
-            try
-            {
-                // TODO: Add delete logic here
+            var name = collection["Name"];
 
-                return RedirectToAction("Index");
-            }
-            catch
+            var connectionString = "Server=localhost;Database=Adventureworks;Uid=root;Pwd=5Fingers";
+            using (var conn = new MySqlConnection(connectionString))
             {
-                return View();
+                conn.Open();
+
+                try
+                {
+                    conn.Execute("DELETE FROM Product Where ProductId= @Id", new {Id = id});
+                    return RedirectToAction("Index");
+                }
+                catch
+                {
+                    return View();
+                }
             }
         }
     }
