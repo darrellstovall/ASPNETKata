@@ -1,4 +1,4 @@
-﻿using ASPNETKata.Models;
+﻿using ASPNETKata.Shared;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -8,33 +8,30 @@ using System.Web.Mvc;
 using MySql.Data;
 using MySql.Data.MySqlClient;
 using Dapper;
+using InversionOfControl.Shared;
 
 namespace ASPNETKata.Controllers
 {
     public class ProductController : Controller
     {
+        private readonly IProductRepository repo;
+
+        public ProductController(IProductRepository repo)
+        {
+            this.repo = repo;
+        }
         // GET: Product
         public ActionResult Index()
         {
-            var connectionString = "Server=localhost;Database=Adventureworks;Uid=root;Pwd=5Fingers";
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                conn.Open();
-                var list = conn.Query<Product>("Select * from Product ORDER By ProductID DESC");
-                return View(list);
-            }
+            var list = repo.GetProducts();
+            return View(list);
         }
 
         // GET: Product/Details/5
         public ActionResult Details(int id)
         {
-            var connectionString = "Server=localhost;Database=Adventureworks;Uid=root;Pwd=5Fingers";
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                conn.Open();
-                var product = conn.Query<Product>("Select * from Product WHERE ProductId = @Id", new { Id = id }).FirstOrDefault();
-                return View(product);
-            }
+            var product = repo.GetDetails(id);
+            return View(product);
         }
 
         // GET: Product/Create
@@ -45,25 +42,10 @@ namespace ASPNETKata.Controllers
 
         // POST: Product/Create
         [HttpPost]
-        public ActionResult Create(FormCollection collection)
+        public ActionResult Create(Product product)
         {
-            var name = collection ["Name"];
-
-            var connectionString = "Server=localhost;Database=Adventureworks;Uid=root;Pwd=5Fingers";
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                conn.Open();
-
-                try
-                {
-                    conn.Execute("INSERT INTO product (Name) VALUES (@Name)", new { Name = name });
-                    return RedirectToAction("Index");
-                }
-                catch
-                {
-                    return View();
-                }
-            }
+            repo.InsertProduct(product);
+            return RedirectToAction("Index");
         }
 
         // GET: Product/Edit/5
@@ -74,24 +56,11 @@ namespace ASPNETKata.Controllers
 
         // POST: Product/Edit/5
         [HttpPost]
-        public ActionResult Edit(int id, FormCollection collection)
+        public ActionResult Edit(int id, Product product)
         {
-            var name = collection["Name"];
-
-            var connectionString = "Server=localhost;Database=Adventureworks;Uid=root;Pwd=5Fingers";
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                conn.Open();
-                try
-                {
-                    conn.Execute("UPDATE product SET Name = @Name WHERE ProductId = @Id", new { Name = name, Id = id });
-                    return RedirectToAction("Index");
-                }
-                catch
-                {
-                    return View();
-                }
-            }
+            product.ProductId = id;
+            repo.UpdateProduct(product);
+            return RedirectToAction("Index");
         }
 
         // GET: Product/Delete/5
@@ -102,25 +71,10 @@ namespace ASPNETKata.Controllers
 
         // POST: Product/Delete/5
         [HttpPost]
-        public ActionResult Delete(int id, FormCollection collection)
+        public ActionResult Delete(int id, Product product)
         {
-            var name = collection["Name"];
-
-            var connectionString = "Server=localhost;Database=Adventureworks;Uid=root;Pwd=5Fingers";
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                conn.Open();
-
-                try
-                {
-                    conn.Execute("DELETE FROM Product Where ProductId= @Id", new {Id = id});
-                    return RedirectToAction("Index");
-                }
-                catch
-                {
-                    return View();
-                }
-            }
+            repo.DeleteProduct(id);
+            return RedirectToAction("Index");
         }
     }
 }
